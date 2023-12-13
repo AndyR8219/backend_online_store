@@ -1,7 +1,11 @@
-export const PORT = 3003
+const PORT = 3003
+const PASS_CODE = '77Njhnyjdfz,fpf@cluster0'
+const NAME = 'Andy152'
+const SIGN = 'testtest'
 
-export const PASS_CODE = '77Njhnyjdfz,fpf@cluster0'
-
-export const NAME = 'Andy152'
-
-export const sign = 'testtest'
+module.exports = {
+  PORT,
+  PASS_CODE,
+  NAME,
+  SIGN,
+}
