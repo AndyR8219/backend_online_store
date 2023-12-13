@@ -1,5 +1,6 @@
+const sign = require('../constants/constants')
+
 const jwt = require('jsonwebtoken')
-const sign = 'testtest'
 
 module.exports = {
   generate(data) {
