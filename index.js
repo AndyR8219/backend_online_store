@@ -12,6 +12,13 @@ const {
   updateUser,
   deleteUser,
 } = require('./controllers/user')
+const {
+  addProduct,
+  editProduct,
+  deleteProduct,
+  getProducts,
+  getProduct,
+} = require('./controllers/product')
 const authenticated = require('./middleware/authenticated')
 const hasRole = require('./middleware/hasRole')
 const ROLES = require('./constants/roles')
@@ -48,7 +55,45 @@ app.post('/logout', async (req, res) => {
   res.cookie('token', '', { httpOnly: true }).send({})
 })
 
+app.get('/products', async (req, res) => {
+  const { products, lastPage } = await getProducts(
+    req.query.search,
+    req.query.limit,
+    req.query.page
+  )
+
+  res.send({ data: { lastPage, products } })
+})
+
+app.get('/products/:id', async (req, res) => {
+  const product = await getProduct(req.params.id)
+  res.send({ data: product })
+})
+
 app.use(authenticated)
+
+app.post('/products', hasRole([ROLES.ADMIN]), async (req, res) => {
+  const newProduct = await addProduct({
+    title: req.body.title,
+    content: req.body.content,
+    image: req.body.imageUrl,
+  })
+  res.send({ data: newProduct })
+})
+
+app.patch('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
+  const updateProduct = await editProduct(req.params.id, {
+    title: req.body.title,
+    content: req.body.content,
+    image: req.body.imageUrl,
+  })
+  res.send({ data: updateProduct })
+})
+
+app.delete('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
+  await deleteProduct(req.params.id)
+  res.send({ error: null })
+})
 
 app.get('/users', hasRole([ROLES.ADMIN]), async (req, res) => {
   const users = await getUsers()
