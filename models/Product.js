@@ -12,7 +12,7 @@ const ProductSchema = mongoose.Schema(
       required: true,
       validate: {
         validator: validator.isURL,
-        massege: 'Image should be a valid URL',
+        massage: 'Image should be a valid URL',
       },
     },
     content: {

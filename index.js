@@ -4,6 +4,8 @@ const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const { PORT, NAME, PASS_CODE } = require('./constants/constants')
 const mapUser = require('./helpers/mapUser')
+const mapProduct = require('./helpers/mapProduct')
+const mapComment = require('./helpers/mapComment')
 const {
   register,
   login,
@@ -19,6 +21,7 @@ const {
   getProducts,
   getProduct,
 } = require('./controllers/product')
+const { addComment, deleteComment } = require('./controllers/comment')
 const authenticated = require('./middleware/authenticated')
 const hasRole = require('./middleware/hasRole')
 const ROLES = require('./constants/roles')
@@ -62,15 +65,32 @@ app.get('/products', async (req, res) => {
     req.query.page
   )
 
-  res.send({ data: { lastPage, products } })
+  res.send({ data: { lastPage, products: products.map(mapProduct) } })
 })
 
 app.get('/products/:id', async (req, res) => {
   const product = await getProduct(req.params.id)
-  res.send({ data: product })
+  res.send({ data: mapProduct(product) })
 })
 
 app.use(authenticated)
+
+app.post('/products/:id/comments', async (req, res) => {
+  const newComment = await addComment(req.params.id, {
+    content: req.body.content,
+    author: req.user.id,
+  })
+  res.send({ data: mapComment(newComment) })
+})
+
+app.delete(
+  '/products/:productId/comments/:commentId',
+  hasRole([ROLES.ADMIN, ROLES.MODERATOR]),
+  async (req, res) => {
+    await deleteComment(req.params.productId, req.params.commentId)
+    res.send({ error: null })
+  }
+)
 
 app.post('/products', hasRole([ROLES.ADMIN]), async (req, res) => {
   const newProduct = await addProduct({
@@ -87,7 +107,7 @@ app.patch('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
     content: req.body.content,
     image: req.body.imageUrl,
   })
-  res.send({ data: updateProduct })
+  res.send({ data: mapProduct(updateProduct) })
 })
 
 app.delete('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {

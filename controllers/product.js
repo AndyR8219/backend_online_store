@@ -1,12 +1,24 @@
 const Product = require('../models/Product')
 
-function addProduct(product) {
-  return Product.create(product)
+async function addProduct(product) {
+  const newProduct = await Product.create(product)
+
+  await newProduct.populate({
+    path: 'comments',
+    populate: 'author',
+  })
+
+  return newProduct
 }
 
 async function editProduct(id, product) {
   const newProduct = await Product.findByIdAndUpdate(id, product, {
-    returnDocument: true,
+    returnDocument: 'after',
+  })
+
+  await newProduct.populate({
+    path: 'comments',
+    populate: 'author',
   })
 
   return newProduct
@@ -22,7 +34,7 @@ async function getProducts(search = '', limit = 10, page = 1) {
       .limit(limit)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 }),
-    Product.countDocument({ title: { $regex: search, $options: 'i' } }),
+    Product.countDocuments({ title: { $regex: search, $options: 'i' } }),
   ])
 
   return {
@@ -32,7 +44,10 @@ async function getProducts(search = '', limit = 10, page = 1) {
 }
 
 function getProduct(id) {
-  return Product.findById(id)
+  return Product.findById(id).populate({
+    path: 'comments',
+    populate: 'author',
+  })
 }
 
 module.exports = {
