@@ -6,6 +6,9 @@ module.exports = function (product) {
     title: product.title,
     imageUrl: product.image,
     content: product.content,
+    price: product.price,
+    quantity: product.quantity,
+    category: product.category,
     comments: product.comments.map((comment) =>
       mongoose.isObjectIdOrHexString(comment) ? comment : mapComment(comment)
     ),
