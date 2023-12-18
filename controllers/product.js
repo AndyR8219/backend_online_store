@@ -28,7 +28,7 @@ function deleteProduct(id) {
   return Product.deleteOne({ _id: id })
 }
 
-async function getProducts(search = '', limit = 10, page = 1) {
+async function getProducts(search = '', limit = 9, page = 1) {
   const [products, count] = await Promise.all([
     Product.find({ title: { $regex: search, $options: 'i' } })
       .limit(limit)

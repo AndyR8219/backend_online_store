@@ -15,7 +15,7 @@ const ProductSchema = mongoose.Schema(
         massage: 'Image should be a valid URL',
       },
     },
-    content: {
+    description: {
       type: String,
       required: true,
     },

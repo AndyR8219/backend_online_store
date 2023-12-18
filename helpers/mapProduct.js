@@ -5,7 +5,7 @@ module.exports = function (product) {
   return {
     title: product.title,
     imageUrl: product.image,
-    content: product.content,
+    description: product.description,
     price: product.price,
     quantity: product.quantity,
     category: product.category,
