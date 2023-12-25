@@ -1,7 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const cookieParser = require('cookie-parser')
-const cors = require('cors')
 const { PORT, NAME, PASS_CODE } = require('./constants/constants')
 const mapUser = require('./helpers/mapUser')
 const mapProduct = require('./helpers/mapProduct')
@@ -25,12 +24,13 @@ const { addComment, deleteComment } = require('./controllers/comment')
 const authenticated = require('./middleware/authenticated')
 const hasRole = require('./middleware/hasRole')
 const ROLES = require('./constants/roles')
+const authToken = require('./middleware/authToken')
+const checkAuth = require('./middleware/checkAuth')
 
 const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors())
 
 app.post('/register', async (req, res) => {
   try {
@@ -39,23 +39,34 @@ app.post('/register', async (req, res) => {
       .cookie('token', token, { httpOnly: true })
       .send({ error: null, user: mapUser(user) })
   } catch (error) {
-    res.send({ error: error.massage || 'Unknow error' })
+    res.send({ error: error.message || 'Unknow error' })
   }
 })
 
 app.post('/login', async (req, res) => {
   try {
-    const { user, token } = await login(req.body.login, req.body.password)
+    const { loginUser, token } = await login(req.body.login, req.body.password)
+
     res
       .cookie('token', token, { httpOnly: true })
-      .send({ error: null, user: mapUser(user) })
+      .send({ error: null, user: mapUser(loginUser) })
   } catch (error) {
-    res.send({ error: error.massage || 'Unknow error' })
+    res.send({ error: error.message || 'Unknow error' })
   }
 })
 
 app.post('/logout', async (req, res) => {
   res.cookie('token', '', { httpOnly: true }).send({})
+})
+
+app.get('/auth/me', checkAuth, (req, res) => {
+  try {
+    const user = req.user
+    console.log(user)
+    res.send({ error: null, user: mapUser(user) })
+  } catch (error) {
+    res.send({ error: error.message || 'Unknow error' })
+  }
 })
 
 app.get('/products', async (req, res) => {
@@ -73,7 +84,8 @@ app.get('/products/:id', async (req, res) => {
   res.send({ data: mapProduct(product) })
 })
 
-app.use(authenticated)
+// app.use(authenticated)
+// app.use(authToken)
 
 app.post('/products/:id/comments', async (req, res) => {
   const newComment = await addComment(req.params.id, {

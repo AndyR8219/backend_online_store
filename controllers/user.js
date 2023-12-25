@@ -18,19 +18,22 @@ async function register(login, password) {
 
 //login
 async function login(login, password) {
-  const user = await User.findOne({ login })
-  if (!login) {
-    throw new Error('User not found')
+  try {
+    const loginUser = await User.findOne({ login })
+    if (!loginUser) {
+      throw { status: 404, message: 'Пользователь не найден' }
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, loginUser.password)
+    if (!isPasswordMatch) {
+      throw { status: 404, message: 'Неверный логин или пароль' }
+    }
+
+    const token = generate({ id: loginUser.id })
+    return { token, loginUser }
+  } catch (error) {
+    throw { status: 500, message: 'Неверный логин или пароль' }
   }
-
-  const isPasswordMatch = await bcrypt.compare(password, user.password)
-  if (!isPasswordMatch) {
-    throw new Error('Wrong password')
-  }
-
-  const token = generate({ id: user.id })
-
-  return { token, user }
 }
 
 function getUsers() {

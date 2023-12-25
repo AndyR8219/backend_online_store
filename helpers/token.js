@@ -1,5 +1,4 @@
 const { SIGN } = require('../constants/constants')
-
 const jwt = require('jsonwebtoken')
 
 module.exports = {
