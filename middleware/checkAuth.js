@@ -16,9 +16,13 @@ module.exports = async function (req, res, next) {
       next()
     } catch (err) {
       return res.status(403).send({
-        error: 'Доступ запрещен',
+        error: 'Неизвестные проблемы с аутентификацией',
       })
     }
+  } else {
+    return res.status(403).send({
+      error: 'Отсутствует аутентификация',
+    })
   }
   return
 }

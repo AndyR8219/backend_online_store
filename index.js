@@ -62,7 +62,6 @@ app.post('/logout', async (req, res) => {
 app.get('/auth/me', checkAuth, (req, res) => {
   try {
     const user = req.user
-    console.log(user)
     res.send({ error: null, user: mapUser(user) })
   } catch (error) {
     res.send({ error: error.message || 'Unknow error' })
