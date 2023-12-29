@@ -8,7 +8,7 @@ module.exports = function (product) {
     description: product.description,
     price: product.price,
     quantity: product.quantity,
-    category: product.category,
+    category: product.category.title,
     comments: product.comments.map((comment) =>
       mongoose.isObjectIdOrHexString(comment) ? comment : mapComment(comment)
     ),

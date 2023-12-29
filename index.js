@@ -5,6 +5,7 @@ const { PORT, NAME, PASS_CODE } = require('./constants/constants')
 const mapUser = require('./helpers/mapUser')
 const mapProduct = require('./helpers/mapProduct')
 const mapComment = require('./helpers/mapComment')
+const mapCategory = require('./helpers/mapCategory')
 const {
   register,
   login,
@@ -69,13 +70,26 @@ app.get('/auth/me', checkAuth, (req, res) => {
 })
 
 app.get('/products', async (req, res) => {
-  const { products, lastPage } = await getProducts(
-    req.query.search,
-    req.query.limit,
-    req.query.page
-  )
+  const { search, limit, page, categories } = req.query
+  const decodedCategories = categories
+    ? decodeURIComponent(categories.replace(/%5B/g, '[').replace(/%5D/g, ']'))
+    : ''
 
-  res.send({ data: { lastPage, products: products.map(mapProduct) } })
+  const parsedCategories = decodedCategories
+    ? JSON.parse(decodedCategories)
+    : []
+
+  const {
+    products,
+    lastPage,
+    categories: allCategories,
+  } = await getProducts(search, limit, page, parsedCategories)
+
+  res.send({
+    lastPage,
+    products: products.map(mapProduct),
+    categories: allCategories.map(mapCategory),
+  })
 })
 
 app.get('/products/:id', async (req, res) => {
@@ -103,26 +117,26 @@ app.delete(
   }
 )
 
-app.post('/products', hasRole([ROLES.ADMIN]), async (req, res) => {
+app.post('/products', async (req, res) => {
   const newProduct = await addProduct({
     title: req.body.title,
-    content: req.body.content,
     image: req.body.imageUrl,
     price: req.body.price,
     quantity: req.body.quantity,
     category: req.body.category,
+    description: req.body.description,
   })
-  res.send({ data: newProduct })
+  res.send({ data: mapProduct(newProduct) })
 })
 
 app.patch('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   const updateProduct = await editProduct(req.params.id, {
     title: req.body.title,
-    content: req.body.content,
     image: req.body.imageUrl,
     price: req.body.price,
     quantity: req.body.quantity,
     category: req.body.category,
+    description: req.body.description,
   })
   res.send({ data: mapProduct(updateProduct) })
 })

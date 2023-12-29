@@ -30,7 +30,8 @@ const ProductSchema = mongoose.Schema(
       min: 0,
     },
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
     },
 
     comments: [

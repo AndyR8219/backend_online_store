@@ -1,12 +1,26 @@
+const Category = require('../models/Category')
 const Product = require('../models/Product')
 
-async function addProduct(product) {
-  const newProduct = await Product.create(product)
+async function addProduct(dataProduct) {
+  let category = null
+  const findIdCategory = await Category.findOne({ title: dataProduct.category })
+  try {
+    if (findIdCategory) {
+      category = findIdCategory._id
+    } else {
+      const newCategory = await Category.create({ title: dataProduct.category })
+      category = newCategory._id
+    }
+  } catch (error) {
+    throw ('Ошибка категории', error)
+  }
 
-  await newProduct.populate({
-    path: 'comments',
-    populate: 'author',
-  })
+  const newProduct = await Product.create({ ...dataProduct, category })
+
+  await newProduct.populate([
+    { path: 'comments', populate: 'author' },
+    { path: 'category', populate: 'title' },
+  ])
 
   return newProduct
 }
@@ -28,18 +42,43 @@ function deleteProduct(id) {
   return Product.deleteOne({ _id: id })
 }
 
-async function getProducts(search = '', limit = 9, page = 1) {
-  const [products, count] = await Promise.all([
-    Product.find({ title: { $regex: search, $options: 'i' } })
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 }),
-    Product.countDocuments({ title: { $regex: search, $options: 'i' } }),
-  ])
+async function getProducts(
+  search = '',
+  limit = 9,
+  page = 1,
+  selectedCategories
+) {
+  try {
+    let categoryFilter = {}
 
-  return {
-    products,
-    lastPage: Math.ceil(count / limit),
+    if (selectedCategories && selectedCategories.length > 0) {
+      categoryFilter = {
+        category: { $in: selectedCategories },
+      }
+    }
+    const [products, count, categories] = await Promise.all([
+      Product.find({
+        title: { $regex: search, $options: 'i' },
+        ...categoryFilter,
+      })
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .sort({ createdAt: -1 })
+        .populate({ path: 'category', populate: 'title' }),
+      Product.countDocuments({
+        title: { $regex: search, $options: 'i' },
+        ...categoryFilter,
+      }),
+      Category.find(),
+    ])
+    return {
+      products,
+      lastPage: Math.ceil(count / limit),
+      categories,
+    }
+  } catch (error) {
+    console.error('Error in getProducts:', error)
+    throw error
   }
 }
 
