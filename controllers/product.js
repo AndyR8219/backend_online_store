@@ -3,8 +3,10 @@ const Product = require('../models/Product')
 
 async function addProduct(dataProduct) {
   let category = null
-  const findIdCategory = await Category.findOne({ title: dataProduct.category })
   try {
+    const findIdCategory = await Category.findOne({
+      title: dataProduct.category,
+    })
     if (findIdCategory) {
       category = findIdCategory._id
     } else {

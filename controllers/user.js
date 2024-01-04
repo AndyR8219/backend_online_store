@@ -37,7 +37,11 @@ async function login(login, password) {
 }
 
 function getUsers() {
-  return User.find()
+  try {
+    return User.find()
+  } catch (error) {
+    throw 'ошибка getUsers'
+  }
 }
 
 function getRoles() {
@@ -53,7 +57,10 @@ function deleteUser(id) {
 }
 
 function updateUser(id, userData) {
-  return User.findByIdAndUpdate(id, userData, { returnDocument: 'after' })
+  const newData = User.findByIdAndUpdate(id, userData, {
+    returnDocument: 'after',
+  })
+  return newData
 }
 
 module.exports = {

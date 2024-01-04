@@ -22,10 +22,8 @@ const {
   getProduct,
 } = require('./controllers/product')
 const { addComment, deleteComment } = require('./controllers/comment')
-const authenticated = require('./middleware/authenticated')
 const hasRole = require('./middleware/hasRole')
 const ROLES = require('./constants/roles')
-const authToken = require('./middleware/authToken')
 const checkAuth = require('./middleware/checkAuth')
 
 const app = express()
@@ -33,7 +31,7 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
-app.post('/register', async (req, res) => {
+app.post('/auth/register', async (req, res) => {
   try {
     const { user, token } = await register(req.body.login, req.body.password)
     res
@@ -44,7 +42,7 @@ app.post('/register', async (req, res) => {
   }
 })
 
-app.post('/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
   try {
     const { loginUser, token } = await login(req.body.login, req.body.password)
 
@@ -56,7 +54,7 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.post('/logout', async (req, res) => {
+app.post('/auth/logout', async (req, res) => {
   res.cookie('token', '', { httpOnly: true }).send({})
 })
 
@@ -69,7 +67,7 @@ app.get('/auth/me', checkAuth, (req, res) => {
   }
 })
 
-app.get('/products', async (req, res) => {
+app.get('/api/products', async (req, res) => {
   const { search, limit, page, categories } = req.query
   const decodedCategories = categories
     ? decodeURIComponent(categories.replace(/%5B/g, '[').replace(/%5D/g, ']'))
@@ -92,24 +90,27 @@ app.get('/products', async (req, res) => {
   })
 })
 
-app.get('/products/:id', async (req, res) => {
+app.get('/api/products/:id', async (req, res) => {
   const product = await getProduct(req.params.id)
   res.send({ data: mapProduct(product) })
 })
 
-// app.use(authenticated)
-// app.use(authToken)
+app.use(checkAuth)
 
-app.post('/products/:id/comments', async (req, res) => {
-  const newComment = await addComment(req.params.id, {
-    content: req.body.content,
-    author: req.user.id,
-  })
-  res.send({ data: mapComment(newComment) })
-})
+app.post(
+  '/api/products/:id/comments',
+  hasRole([ROLES.ADMIN, ROLES.MODERATOR, ROLES.USER]),
+  async (req, res) => {
+    const newComment = await addComment(req.params.id, {
+      content: req.body.content,
+      author: req.user.id,
+    })
+    res.send({ data: mapComment(newComment) })
+  }
+)
 
 app.delete(
-  '/products/:productId/comments/:commentId',
+  '/api/products/:productId/comments/:commentId',
   hasRole([ROLES.ADMIN, ROLES.MODERATOR]),
   async (req, res) => {
     await deleteComment(req.params.productId, req.params.commentId)
@@ -117,7 +118,7 @@ app.delete(
   }
 )
 
-app.post('/products', async (req, res) => {
+app.post('/api/products', hasRole([ROLES.ADMIN]), async (req, res) => {
   const newProduct = await addProduct({
     title: req.body.title,
     image: req.body.imageUrl,
@@ -129,7 +130,7 @@ app.post('/products', async (req, res) => {
   res.send({ data: mapProduct(newProduct) })
 })
 
-app.patch('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
+app.patch('/api/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   const updateProduct = await editProduct(req.params.id, {
     title: req.body.title,
     image: req.body.imageUrl,
@@ -141,23 +142,23 @@ app.patch('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   res.send({ data: mapProduct(updateProduct) })
 })
 
-app.delete('/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
+app.delete('/api/products/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   await deleteProduct(req.params.id)
   res.send({ error: null })
 })
 
-app.get('/users', hasRole([ROLES.ADMIN]), async (req, res) => {
+app.get('/api/users', hasRole([ROLES.ADMIN]), async (req, res) => {
   const users = await getUsers()
   res.send({ data: users.map(mapUser) })
 })
 
-app.get('/users/roles', hasRole([ROLES.ADMIN]), (req, res) => {
-  const roles = getRoles()
+app.get('/api/users/roles', hasRole([ROLES.ADMIN]), async (req, res) => {
+  const roles = await getRoles()
 
   res.send({ data: roles })
 })
 
-app.patch('/users/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
+app.patch('/api/users/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   const newUser = await updateUser(req.params.id, {
     role: req.body.roleId,
   })
@@ -165,7 +166,7 @@ app.patch('/users/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   res.send({ data: mapUser(newUser) })
 })
 
-app.delete('/users/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
+app.delete('/api/users/:id', hasRole([ROLES.ADMIN]), async (req, res) => {
   await deleteUser(req.params.id)
   res.send({ error: null })
 })
