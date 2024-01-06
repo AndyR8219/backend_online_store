@@ -28,14 +28,22 @@ async function addProduct(dataProduct) {
 }
 
 async function editProduct(id, product) {
-  const newProduct = await Product.findByIdAndUpdate(id, product, {
-    returnDocument: 'after',
+  const findIdCategory = await Category.findOne({
+    title: product.category,
   })
+  const newProduct = await Product.findByIdAndUpdate(
+    id,
+    { ...product, category: findIdCategory },
+    { returnDocument: 'after' }
+  )
 
-  await newProduct.populate({
-    path: 'comments',
-    populate: 'author',
-  })
+  await newProduct.populate([
+    {
+      path: 'comments',
+      populate: 'author',
+    },
+    { path: 'category', populate: 'title' },
+  ])
 
   return newProduct
 }
@@ -85,10 +93,13 @@ async function getProducts(
 }
 
 function getProduct(id) {
-  return Product.findById(id).populate({
-    path: 'comments',
-    populate: 'author',
-  })
+  return Product.findById(id).populate([
+    {
+      path: 'comments',
+      populate: 'author',
+    },
+    { path: 'category', populate: 'title' },
+  ])
 }
 
 module.exports = {
