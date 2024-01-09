@@ -1,7 +1,7 @@
 const Comment = require('../models/Comment')
 const Product = require('../models/Product')
 
-async function addComment(productId, comment) {
+const addComment = async (productId, comment) => {
   const newComment = await Comment.create(comment)
 
   await Product.findByIdAndUpdate(productId, {
@@ -12,7 +12,7 @@ async function addComment(productId, comment) {
   return newComment
 }
 
-async function deleteComment(productId, commentId) {
+const deleteComment = async (productId, commentId) => {
   await Comment.deleteOne({ _id: commentId })
   await Product.findByIdAndUpdate(productId, {
     $pull: { comments: commentId },

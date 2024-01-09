@@ -17,6 +17,16 @@ const UserSchema = mongoose.Schema(
       type: Number,
       default: roles.USER,
     },
+    cart_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Cart',
+    },
+    orders: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+      },
+    ],
   },
   { timestamps: true }
 )

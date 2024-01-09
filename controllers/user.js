@@ -1,50 +1,62 @@
 const bcrypt = require('bcrypt')
 const User = require('../models/User')
-const { generate } = require('../helpers/token')
+const Cart = require('../models/Cart')
 const ROLES = require('../constants/roles')
+const { generate } = require('../helpers/token')
 
-//register
-async function register(login, password) {
+const register = async (login, password) => {
   if (!password) {
-    throw new Erroe('Password is empty')
+    throw new Error('Не указан пароль')
   }
   const passwordHash = await bcrypt.hash(password, 10)
 
-  const user = await User.create({ login, password: passwordHash })
-  const token = generate({ id: user.id })
+  const user = await User.create({
+    login,
+    password: passwordHash,
+  })
 
+  const cart = await Cart.create({ user_id: user._id })
+  if (!cart) {
+    throw new Error('Ошибка создания корзины')
+  }
+
+  user.cart_id = cart._id
+  await user.save()
+
+  const token = generate({ id: user.id })
   return { user, token }
 }
 
-//login
-async function login(login, password) {
-  try {
-    const loginUser = await User.findOne({ login })
-    if (!loginUser) {
-      throw { status: 404, message: 'Пользователь не найден' }
-    }
-
-    const isPasswordMatch = await bcrypt.compare(password, loginUser.password)
-    if (!isPasswordMatch) {
-      throw { status: 404, message: 'Неверный логин или пароль' }
-    }
-
-    const token = generate({ id: loginUser.id })
-    return { token, loginUser }
-  } catch (error) {
-    throw { status: 500, message: 'Неверный логин или пароль' }
+const login = async (login, password) => {
+  const loginUser = await User.findOne({ login })
+  if (!loginUser) {
+    throw { status: 401, message: 'Неверный логин или пароль' }
   }
+
+  const isPasswordMatch = await bcrypt.compare(password, loginUser.password)
+  if (!isPasswordMatch) {
+    throw { status: 401, message: 'Неверный логин или пароль' }
+  }
+
+  const token = generate({ id: loginUser.id })
+
+  if (!loginUser.cart_id) {
+    const cart = await Cart.create({ user_id: loginUser._id })
+    if (!cart) {
+      throw new Error('Ошибка создания корзины')
+    }
+    loginUser.cart_id = cart._id
+    await loginUser.save()
+  }
+  const updatedUser = await User.findById(loginUser._id).populate('cart_id')
+  return { token, loginUser: updatedUser }
 }
 
-function getUsers() {
-  try {
-    return User.find()
-  } catch (error) {
-    throw 'ошибка getUsers'
-  }
+const getUsers = () => {
+  return User.find()
 }
 
-function getRoles() {
+const getRoles = () => {
   return [
     { id: ROLES.ADMIN, name: 'Admin' },
     { id: ROLES.MODERATOR, name: 'Moderator' },
@@ -52,11 +64,11 @@ function getRoles() {
   ]
 }
 
-function deleteUser(id) {
+const deleteUser = (id) => {
   return User.deleteOne({ _id: id })
 }
 
-function updateUser(id, userData) {
+const updateUser = (id, userData) => {
   const newData = User.findByIdAndUpdate(id, userData, {
     returnDocument: 'after',
   })
