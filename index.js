@@ -32,6 +32,7 @@ const { addComment, deleteComment } = require('./controllers/comment')
 const hasRole = require('./middleware/hasRole')
 const ROLES = require('./constants/roles')
 const checkAuth = require('./middleware/checkAuth')
+const decodedCategories = require('./middleware/decodedCategory')
 
 const app = express()
 
@@ -45,7 +46,7 @@ app.post('/auth/register', async (req, res) => {
       .cookie('token', token, { httpOnly: true })
       .send({ error: null, user: mapUser(user) })
   } catch (error) {
-    res.send({ error: error.message || 'Unknow error' })
+    res.status(401).send({ error: error.message || 'Unknow error' })
   }
 })
 
@@ -76,20 +77,14 @@ app.get('/auth/me', checkAuth, async (req, res) => {
 
     res.send({ error: null, user: mapUser(user) })
   } catch (error) {
-    res.send({ error: error.message || 'Unknow error' })
+    res.send({ error: error || 'Unknow error' })
   }
 })
 
 app.get('/api/products', async (req, res) => {
   try {
     const { search, categories, page, limit } = req.query
-    const decodedCategories = categories
-      ? decodeURIComponent(categories.replace(/%5B/g, '[').replace(/%5D/g, ']'))
-      : ''
-
-    const parsedCategories = decodedCategories
-      ? JSON.parse(decodedCategories)
-      : []
+    const parsedCategories = decodedCategories(categories)
 
     const {
       products,

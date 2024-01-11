@@ -5,8 +5,12 @@ const ROLES = require('../constants/roles')
 const { generate } = require('../helpers/token')
 
 const register = async (login, password) => {
+  const findUser = await User.findOne({ login })
+  if (findUser) {
+    throw { status: 401, message: 'Указанный логин занят' }
+  }
   if (!password) {
-    throw new Error('Не указан пароль')
+    throw { status: 401, message: 'Не указан пароль' }
   }
   const passwordHash = await bcrypt.hash(password, 10)
 
@@ -17,7 +21,7 @@ const register = async (login, password) => {
 
   const cart = await Cart.create({ user_id: user._id })
   if (!cart) {
-    throw new Error('Ошибка создания корзины')
+    throw { status: 401, message: 'Ошибка создания корзины' }
   }
 
   user.cart_id = cart._id
@@ -43,7 +47,7 @@ const login = async (login, password) => {
   if (!loginUser.cart_id) {
     const cart = await Cart.create({ user_id: loginUser._id })
     if (!cart) {
-      throw new Error('Ошибка создания корзины')
+      throw { status: 401, message: 'Ошибка создания корзины' }
     }
     loginUser.cart_id = cart._id
     await loginUser.save()
